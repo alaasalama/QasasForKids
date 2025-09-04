@@ -1,0 +1,337 @@
+// story.js - story view, accordion, ayat fetch, single audio controller
+
+(function () {
+  const { el, showToast, fetchJSON, parseHashParams, scrollIntoViewCentered, setHashParams } = window.qqkUtils;
+  const { loadStoriesFromCSV } = window.qqkCSV;
+  const { initSettingsUI, getSettings, setSettings } = window.qqkState;
+
+  const API_BASE = 'https://api.alquran.cloud/v1';
+
+  let storiesById = {};
+  let story = null;
+  let selectedPosition = null; // { surahNumber, ayaFrom, ayaTo }
+
+  // Cache: key -> { ayat: [{n, text, audio}], surahNumber, from, to }
+  const memoryCache = new Map();
+
+  function cacheKey(surah, from, to, textE, audioE) {
+    return `${surah}|${from}-${to}|${textE}|${audioE}`;
+  }
+
+  // Local text cache per surah for offline-first loading
+  const localTextCache = new Map(); // surah -> { edition, surah, ayahs: { [n]: text } }
+
+  async function fetchAyahTextLocalFirst(surah, ayah, edition) {
+    // Try local JSON if edition is the default (quran-uthmani-quran-academy)
+    if (edition === 'quran-uthmani-quran-academy') {
+      try {
+        let data = localTextCache.get(surah);
+        if (!data) {
+          const url = `assets/data/text/${surah}.json?v=${Date.now()}`;
+          data = await fetchJSON(url);
+          localTextCache.set(surah, data);
+        }
+        const t = data?.ayahs?.[String(ayah)] ?? data?.ayahs?.[ayah];
+        if (t) return t;
+      } catch { /* fall back to remote */ }
+    }
+    // Fallback to remote API
+    return fetchAyahTextRemote(surah, ayah, edition);
+  }
+
+  async function fetchAyahTextRemote(surah, ayah, edition) {
+    const url = `${API_BASE}/ayah/${surah}:${ayah}/${edition}`;
+    const json = await fetchJSON(url);
+    return json?.data?.text || '';
+  }
+
+  async function fetchAyahAudio(surah, ayah, edition) {
+    const url = `${API_BASE}/ayah/${surah}:${ayah}/${edition}`;
+    const json = await fetchJSON(url);
+    return json?.data?.audio || json?.data?.audioSecondary?.[0] || null;
+  }
+
+  async function loadAyatForRange(surah, from, to) {
+    const settings = getSettings();
+    const key = cacheKey(surah, from, to, settings.textEdition, settings.audioEdition);
+    if (memoryCache.has(key)) return memoryCache.get(key);
+
+    const ayat = [];
+    for (let n = from; n <= to; n++) {
+      try {
+        const [text, audio] = await Promise.all([
+          fetchAyahTextLocalFirst(surah, n, settings.textEdition),
+          fetchAyahAudio(surah, n, settings.audioEdition),
+        ]);
+        ayat.push({ n, text, audio });
+      } catch (e) {
+        console.warn('Ayah fetch failed', surah, n, e);
+        ayat.push({ n, text: '(تعذر تحميل الآية)', audio: null });
+      }
+    }
+    const result = { surahNumber: surah, from, to, ayat };
+    memoryCache.set(key, result);
+    return result;
+  }
+
+  // Single audio controller
+  const AudioController = (() => {
+    let audioEl = null;
+    let queue = [];
+    let index = -1;
+    let repeatRemaining = 1;
+    let onUpdate = () => {};
+    let onEnd = () => {};
+
+    function ensureEl() {
+      if (!audioEl) {
+        audioEl = new Audio();
+        audioEl.addEventListener('ended', handleEnded);
+        audioEl.addEventListener('timeupdate', () => onUpdate(index, audioEl));
+      }
+      return audioEl;
+    }
+
+    function stop() {
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+      }
+      // Keep the queue so Play can start again from the beginning
+      index = -1;
+      onUpdate(index, audioEl);
+    }
+
+    function handleEnded() {
+      next();
+    }
+
+    function setQueue(items, repeatCount = 1, updateCb = () => {}, endCb = () => {}) {
+      stop();
+      queue = items.slice();
+      index = -1;
+      repeatRemaining = Math.max(1, repeatCount|0);
+      onUpdate = updateCb; onEnd = endCb;
+    }
+
+    function playAt(i) {
+      const a = ensureEl();
+      if (i < 0 || i >= queue.length) return finishOrRepeat();
+      index = i;
+      const item = queue[index];
+      a.src = item.audio || '';
+      if (!item.audio) {
+        // skip if missing audio
+        return next();
+      }
+      a.play().catch(err => {
+        console.warn('play failed', err);
+        next();
+      });
+      onUpdate(index, a);
+    }
+
+    function finishOrRepeat() {
+      if (repeatRemaining > 1) {
+        repeatRemaining -= 1;
+        index = -1;
+        playAt(0);
+      } else {
+        stop();
+        onEnd();
+      }
+    }
+
+    function next() { playAt(index + 1); }
+    function prev() { playAt(index - 1); }
+    function play() { playAt(index < 0 ? 0 : index); }
+    function pause() { ensureEl().pause(); onUpdate(index, audioEl); }
+    function resume() { ensureEl().play().catch(()=>{}); onUpdate(index, audioEl); }
+
+    return { setQueue, play, pause, resume, stop, next, prev };
+  })();
+
+  function renderAccordion(story) {
+    const acc = document.getElementById('accordion');
+    acc.innerHTML = '';
+    const entries = Object.entries(story.positionsBySurah).sort((a,b)=> Number(a[0]) - Number(b[0]));
+    entries.forEach(([surah, positions], idx) => {
+      const headerId = `hdr-${surah}`;
+      const panelId = `pnl-${surah}`;
+      const item = el('div', { class: 'accordion-item', 'aria-expanded': 'false', dataset: { surah: String(surah) } });
+      const btn = el('button', { class: 'accordion-header', id: headerId, 'aria-controls': panelId, 'aria-expanded': 'false' }, [
+        `سورة ${positions[0].surahNameAr || positions[0].surahNameEn || ''} (${surah})`,
+        el('span', { class: 'ayah-meta' }, `${positions.length} موضع`)
+      ]);
+      const panel = el('div', { class: 'accordion-panel', id: panelId, role: 'region', 'aria-labelledby': headerId });
+      const list = el('div', { class: 'position-list' });
+      positions.forEach(p => {
+        const b = el('button', { class: 'position-btn', dataset: { surah: String(p.surahNumber), from: String(p.ayaFrom), to: String(p.ayaTo) } });
+        b.textContent = `الموضع ${p.positionIndex}: ${p.ayaFrom} – ${p.ayaTo}`;
+        b.addEventListener('click', () => onSelectPosition(p));
+        list.appendChild(b);
+      });
+      panel.appendChild(list);
+      btn.addEventListener('click', () => toggleItem(item));
+      item.append(btn, panel);
+      acc.appendChild(item);
+    });
+  }
+
+  function toggleItem(item) {
+    const expanded = item.getAttribute('aria-expanded') === 'true';
+    item.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    const btn = item.querySelector('.accordion-header');
+    btn?.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+  }
+
+  function clearAyat() {
+    document.getElementById('ayat').innerHTML = '';
+    setPlaybackStatus('');
+  }
+
+  function setPlaybackStatus(text) {
+    const s = document.getElementById('playback-status');
+    s.textContent = text || '';
+  }
+
+  function renderAyat(list) {
+    const cont = document.getElementById('ayat');
+    cont.innerHTML = '';
+    list.forEach(({ n, text }) => {
+      const row = el('div', { class: 'ayah', id: `ayah-${n}` }, [
+        el('span', { class: 'ayah-meta' }, `(${n})`),
+        el('span', { class: 'font-kitab ayah-text' }, text || '')
+      ]);
+      cont.appendChild(row);
+    });
+  }
+
+  function highlightCurrent(n) {
+    document.querySelectorAll('.ayah-text.current').forEach(e => e.classList.remove('current'));
+    const row = document.getElementById(`ayah-${n}`);
+    const node = row?.querySelector('.ayah-text');
+    if (node) { node.classList.add('current'); scrollIntoViewCentered(row); }
+  }
+
+  async function onSelectPosition(p) {
+    // stop existing
+    AudioController.stop?.();
+    selectedPosition = { surahNumber: p.surahNumber, ayaFrom: p.ayaFrom, ayaTo: p.ayaTo, positionIndex: p.positionIndex, surahNameAr: p.surahNameAr, surahNameEn: p.surahNameEn };
+    setHashParams({ storyId: story.id, surah: p.surahNumber, from: p.ayaFrom, to: p.ayaTo });
+
+    // Mark active surah and collapse others
+    const items = document.querySelectorAll('.accordion-item');
+    items.forEach(it => {
+      const isActive = it.dataset.surah === String(p.surahNumber);
+      it.classList.toggle('active-surah', isActive);
+      it.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+      it.querySelector('.accordion-header')?.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+    });
+
+    // Highlight selected position button
+    document.querySelectorAll('.position-btn.active').forEach(n => n.classList.remove('active'));
+    const btn = document.querySelector(`.position-btn[data-surah="${p.surahNumber}"][data-from="${p.ayaFrom}"][data-to="${p.ayaTo}"]`);
+    btn?.classList.add('active');
+
+    // Update position info box
+    setPositionInfo(p);
+
+    clearAyat();
+    setPlaybackStatus('جارٍ التحضير…');
+    try {
+      const data = await loadAyatForRange(p.surahNumber, p.ayaFrom, p.ayaTo);
+      renderAyat(data.ayat);
+      setupQueueAndControls(data.ayat);
+      setPlaybackStatus(`المقطع جاهز: ${data.ayat.length} آية`);
+    } catch (e) {
+      console.error(e);
+      showToast('حدث خطأ أثناء التحميل.');
+    }
+  }
+
+  function setPositionInfo(p) {
+    const box = document.getElementById('position-info');
+    if (!box) return;
+    const name = p.surahNameAr || p.surahNameEn || '';
+    box.textContent = `الموضع ${p.positionIndex} — سورة ${name} (${p.surahNumber}) — الآيات ${p.ayaFrom}–${p.ayaTo}`;
+  }
+
+  function setupQueueAndControls(ayat) {
+    const s = getSettings();
+    const queue = ayat.map(a => ({ audio: a.audio, ayahNumber: a.n }));
+
+    const repeatSelInline = document.getElementById('repeat-count-inline');
+    repeatSelInline.value = String(s.repeat);
+    repeatSelInline.onchange = () => setSettings({ repeat: Number(repeatSelInline.value) || 1 });
+    let lastIdx = -1;
+    AudioController.setQueue(queue, s.repeat, (idx, audioEl) => {
+      const total = queue.length;
+      if (idx >= 0 && idx < total) {
+        if (idx !== lastIdx) {
+          const currentAyah = queue[idx].ayahNumber;
+          highlightCurrent(currentAyah);
+          lastIdx = idx;
+        }
+        const progress = audioEl && audioEl.duration ? Math.round((audioEl.currentTime / audioEl.duration) * 100) : 0;
+        setPlaybackStatus(`تشغيل: آية ${idx + 1}/${total} — تقدم ${progress}%`);
+      } else {
+        setPlaybackStatus('');
+      }
+    }, () => {
+      setPlaybackStatus('انتهى التشغيل');
+    });
+
+    // Wire controls
+    document.getElementById('btn-play').onclick = () => AudioController.play();
+    document.getElementById('btn-pause').onclick = () => AudioController.pause();
+    document.getElementById('btn-resume').onclick = () => AudioController.resume();
+    document.getElementById('btn-stop').onclick = () => { AudioController.stop(); document.querySelectorAll('.ayah.current').forEach(e => e.classList.remove('current')); setPlaybackStatus(''); };
+  }
+
+  function applyDeepLink() {
+    const { surah, from, to } = parseHashParams();
+    if (surah && from && to) {
+      const sNum = Number(surah), a = Number(from), b = Number(to);
+      const p = story.positions.find(x => x.surahNumber === sNum && x.ayaFrom === a && x.ayaTo === b) || { surahNumber: sNum, ayaFrom: a, ayaTo: b, positionIndex: 0 };
+      // load ayat but do not autoplay; onSelectPosition will expand + mark active
+      onSelectPosition(p).then(() => {
+        // paused by default: user can hit play
+      });
+    } else {
+      // No deep link: auto-open first position
+      const first = story.positions[0];
+      if (first) {
+        onSelectPosition(first);
+      }
+    }
+  }
+
+  async function init() {
+    initSettingsUI(document);
+    const params = parseHashParams();
+    if (!params.storyId) {
+      showToast('لم يتم تحديد القصة.');
+      return;
+    }
+    try {
+      const data = await loadStoriesFromCSV();
+      storiesById = data.storiesById;
+      story = storiesById[params.storyId];
+      if (!story) throw new Error('story not found');
+      document.getElementById('story-title').textContent = story.nameAr || story.nameEn || '—';
+      const sectionTitle = document.querySelector('.section-title');
+      if (sectionTitle) {
+        const count = story.positions?.length || 0;
+        sectionTitle.innerHTML = `المواضع <span class="badge">${count}</span>`;
+      }
+      renderAccordion(story);
+      applyDeepLink();
+    } catch (e) {
+      console.error(e);
+      showToast('تعذر تحميل القصة.');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();

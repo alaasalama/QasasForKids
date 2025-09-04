@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>قصص القرآن للأطفال</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header hero">
+      <div class="hero-inner">
+        <a href="index.html" class="site-title-link" aria-label="الصفحة الرئيسية">
+          <h1 class="site-title">قصص القرآن للأطفال</h1>
+        </a>
+        <p class="site-tagline">استكشف قصص الأنبياء والقصص الأخرى من القرآن الكريم</p>
+        <div class="header-actions">
+          <button id="open-settings" class="btn">الإعدادات</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="filters">
+        <button id="filter-all" class="filter-btn" aria-pressed="true">الجميع</button>
+        <button id="filter-prophet" class="filter-btn" aria-pressed="false">قصص أنبياء</button>
+        <button id="filter-other" class="filter-btn" aria-pressed="false">قصص أخرى</button>
+      </div>
+      <div class="search-bar">
+        <label class="visually-hidden" for="search-input">ابحث عن قصة</label>
+        <input id="search-input" type="search" placeholder="ابحث بعنوان القصة…" aria-label="بحث" />
+      </div>
+
+      <section id="stories-list" class="cards"></section>
+      <div id="empty-state" class="empty" hidden>لا توجد نتائج مطابقة</div>
+    </main>
+
+    <div id="settings-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="settings-title">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-panel" role="document">
+        <header class="modal-header">
+          <h2 id="settings-title">الإعدادات</h2>
+          <button class="icon-btn" data-close aria-label="إغلاق">×</button>
+        </header>
+        <div class="modal-body">
+          <div class="form-row">
+            <label for="audio-edition">القارئ (الصوت)</label>
+            <select id="audio-edition"></select>
+          </div>
+          <div class="form-row">
+            <label for="repeat-count">تكرار كل مقطع</label>
+            <select id="repeat-count">
+              <option value="1">1</option>
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="btn" data-close>تم</button>
+        </footer>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <a href="#" class="footer-link">من نحن</a>
+        <a href="#" class="footer-link">اتصل بنا</a>
+        <div class="footer-copy">حقوق النشر © <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/state.js"></script>
+    <script src="assets/js/csv.js"></script>
+    <script src="assets/js/home.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+  </html>
