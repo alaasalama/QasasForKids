@@ -1,6 +1,6 @@
 {
   // Cloudflare Workers config to serve this static site
-  "name": "qasas-quran-for-kids",
+  "name": "qasasforkids",
   "compatibility_date": "2025-09-04",
   // Serve static assets from the repo root
   "assets": {
