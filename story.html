@@ -9,9 +9,6 @@
   <body>
     <header class="site-header hero">
       <div class="hero-inner">
-        <div class="header-actions">
-          <button id="open-settings" class="btn">الإعدادات</button>
-        </div>
         <h1 id="story-title" class="site-title">…</h1>
         <a class="back-link" href="index.html" aria-label="ارجع إلى الصفحة الرئيسية">ارجع إلى الصفحة الرئيسية</a>
       </div>
@@ -30,6 +27,8 @@
             <button id="btn-pause" class="btn" aria-label="إيقاف مؤقت">إيقاف مؤقت</button>
             <button id="btn-resume" class="btn" aria-label="استئناف">استئناف</button>
             <button id="btn-stop" class="btn" aria-label="إيقاف">إيقاف</button>
+            <label for="reciter-select" class="repeat-label">القارئ</label>
+            <select id="reciter-select" class="repeat-select" aria-label="اختيار القارئ"></select>
             <label for="repeat-count-inline" class="repeat-label">تكرار</label>
             <select id="repeat-count-inline" class="repeat-select" aria-label="عدد التكرارات">
               <option value="1">1</option>
@@ -44,33 +43,7 @@
       </section>
     </main>
 
-    <div id="settings-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="settings-title">
-      <div class="modal-backdrop" data-close></div>
-      <div class="modal-panel" role="document">
-        <header class="modal-header">
-          <h2 id="settings-title">الإعدادات</h2>
-          <button class="icon-btn" data-close aria-label="إغلاق">×</button>
-        </header>
-        <div class="modal-body">
-          <div class="form-row">
-            <label for="audio-edition">القارئ (الصوت)</label>
-            <select id="audio-edition"></select>
-          </div>
-          <div class="form-row">
-            <label for="repeat-count">تكرار كل مقطع</label>
-            <select id="repeat-count">
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-        </div>
-        <footer class="modal-footer">
-          <button class="btn" data-close>تم</button>
-        </footer>
-      </div>
-    </div>
+    
 
     <footer class="site-footer">
       <div class="container footer-inner">

@@ -13,9 +13,6 @@
           <h1 class="site-title">قصص القرآن للأطفال</h1>
         </a>
         <p class="site-tagline">استكشف قصص الأنبياء والقصص الأخرى من القرآن الكريم</p>
-        <div class="header-actions">
-          <button id="open-settings" class="btn">الإعدادات</button>
-        </div>
       </div>
     </header>
 
@@ -34,33 +31,7 @@
       <div id="empty-state" class="empty" hidden>لا توجد نتائج مطابقة</div>
     </main>
 
-    <div id="settings-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="settings-title">
-      <div class="modal-backdrop" data-close></div>
-      <div class="modal-panel" role="document">
-        <header class="modal-header">
-          <h2 id="settings-title">الإعدادات</h2>
-          <button class="icon-btn" data-close aria-label="إغلاق">×</button>
-        </header>
-        <div class="modal-body">
-          <div class="form-row">
-            <label for="audio-edition">القارئ (الصوت)</label>
-            <select id="audio-edition"></select>
-          </div>
-          <div class="form-row">
-            <label for="repeat-count">تكرار كل مقطع</label>
-            <select id="repeat-count">
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-        </div>
-        <footer class="modal-footer">
-          <button class="btn" data-close>تم</button>
-        </footer>
-      </div>
-    </div>
+    
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 

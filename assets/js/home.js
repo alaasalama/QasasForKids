@@ -3,7 +3,6 @@
 (function () {
   const { el, debounce } = window.qqkUtils;
   const { loadStoriesFromCSV } = window.qqkCSV;
-  const { initSettingsUI } = window.qqkState;
 
   let stories = [];
   let storiesById = {};
@@ -51,7 +50,6 @@
   }
 
   async function init() {
-    initSettingsUI(document);
     try {
       const data = await loadStoriesFromCSV();
       stories = data.stories;

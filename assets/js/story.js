@@ -3,9 +3,20 @@
 (function () {
   const { el, showToast, fetchJSON, parseHashParams, scrollIntoViewCentered, setHashParams } = window.qqkUtils;
   const { loadStoriesFromCSV } = window.qqkCSV;
-  const { initSettingsUI, getSettings, setSettings } = window.qqkState;
+  const { getSettings, setSettings } = window.qqkState;
 
   const API_BASE = 'https://api.alquran.cloud/v1';
+  // Allowed reciters with Arabic display names
+  const RECITERS = [
+    { id: 'ar.abdulbasitmurattal', name: 'عبد الباسط (مرتل)' },
+    { id: 'ar.alafasy', name: 'مشاري العفاسي' },
+    { id: 'ar.husary', name: 'محمود الحصري' },
+    { id: 'ar.hudhaify', name: 'علي الحذيفي' },
+    { id: 'ar.minshawi', name: 'محمد صديق المنشاوي' },
+    { id: 'ar.muhammadayyoub', name: 'محمد أيوب' },
+    { id: 'ar.aymanswoaid', name: 'أيمن سويد' },
+    { id: 'ar.mahermuaiqly', name: 'ماهر المعيقلي' },
+  ];
 
   let storiesById = {};
   let story = null;
@@ -261,6 +272,23 @@
     const s = getSettings();
     const queue = ayat.map(a => ({ audio: a.audio, ayahNumber: a.n }));
 
+    // Reciter dropdown in player
+    const recSel = document.getElementById('reciter-select');
+    if (recSel && !recSel.dataset.inited) {
+      recSel.innerHTML = RECITERS.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+      recSel.value = s.audioEdition;
+      recSel.addEventListener('change', () => {
+        setSettings({ audioEdition: recSel.value });
+        if (selectedPosition) {
+          // reload current position to refresh audio URLs
+          onSelectPosition(selectedPosition);
+        }
+      });
+      recSel.dataset.inited = '1';
+    } else if (recSel) {
+      recSel.value = s.audioEdition;
+    }
+
     const repeatSelInline = document.getElementById('repeat-count-inline');
     repeatSelInline.value = String(s.repeat);
     repeatSelInline.onchange = () => setSettings({ repeat: Number(repeatSelInline.value) || 1 });
@@ -308,7 +336,6 @@
   }
 
   async function init() {
-    initSettingsUI(document);
     const params = parseHashParams();
     if (!params.storyId) {
       showToast('لم يتم تحديد القصة.');
