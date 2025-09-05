@@ -43,7 +43,7 @@ body {
 .site-tagline { margin: .35rem 0 0; color: var(--muted); }
 .header-actions { position: absolute; inset-inline-end: 1rem; top: 1rem; }
 
-.btn { background: var(--primary); color: var(--primary-contrast); border: none; border-radius: .5rem; padding: .5rem .75rem; cursor: pointer; }
+.btn { background: var(--primary); color: var(--primary-contrast); border: none; border-radius: .5rem; padding: .5rem .75rem; cursor: pointer; display: inline-block; text-decoration: none; }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 .icon-btn { background: transparent; border: none; font-size: 1.25rem; cursor: pointer; }
 
@@ -85,6 +85,8 @@ body {
 .controls { display: grid; gap: .4rem; background: #fff; border: 1px solid var(--border); border-radius: .75rem; padding: .5rem; }
 .player-controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .player-controls .btn { padding: .35rem .6rem; }
+.player-selects { display: flex; gap: .5rem; align-items: center; flex-basis: 100%; }
+@media (min-width: 640px) { .player-selects { flex-basis: auto; } }
 .status:empty { display: none; }
 .position-info { background: #fff; border: 1px solid var(--border); border-radius: .75rem; padding: .5rem .75rem; color: var(--muted); }
 .repeat-label { color: var(--muted); }
@@ -118,7 +120,7 @@ body {
 
 /* Ayah text size (adjust here) */
 .ayat .font-kitab { font-size: 2rem; }
-.back-link { display: inline-block; margin-top: .25rem; color: var(--primary); text-decoration: none; }
+.back-link { margin-top: .5rem; }
 
 /* Section title count badge */
 .section-title .badge { margin-inline-start: .5rem; }

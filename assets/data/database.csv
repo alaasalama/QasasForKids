@@ -1,9 +1,9 @@
 item_id,item_name_en,item_name_ar,type,positions,surah_number,surah_name,surah_name_ar,aya_from,aya_to
 1,musa,قصص أنبياء - موسي عليه السلام و فرعون,prophet,1,2,Al-Baqara,البقرة,49,74
 ,,,,2,2,Al-Baqara,البقرة,108,108
-,,,,3,3,An-Nisaa,النساء,153,155
-,,,,4,3,An-Nisaa,النساء,164,164
-,,,,5,4,Al-Maaida,المائدة,20,26
+,,,,3,4,An-Nisaa,النساء,153,155
+,,,,4,4,An-Nisaa,النساء,164,164
+,,,,5,5,Al-Maaida,المائدة,20,26
 ,,,,6,6,Al-An'aam,الأنعام,154,154
 ,,,,7,7,Al-A'raaf,الأعراف,103,156
 ,,,,8,7,Al-A'raaf,الأعراف,159,171

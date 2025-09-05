@@ -10,7 +10,7 @@
     <header class="site-header hero">
       <div class="hero-inner">
         <h1 id="story-title" class="site-title">…</h1>
-        <a class="back-link" href="index.html" aria-label="ارجع إلى الصفحة الرئيسية">ارجع إلى الصفحة الرئيسية</a>
+        <a class="btn back-link" href="index.html" aria-label="ارجع إلى الصفحة الرئيسية">ارجع إلى الصفحة الرئيسية</a>
       </div>
     </header>
 
@@ -27,15 +27,17 @@
             <button id="btn-pause" class="btn" aria-label="إيقاف مؤقت">إيقاف مؤقت</button>
             <button id="btn-resume" class="btn" aria-label="استئناف">استئناف</button>
             <button id="btn-stop" class="btn" aria-label="إيقاف">إيقاف</button>
-            <label for="reciter-select" class="repeat-label">القارئ</label>
-            <select id="reciter-select" class="repeat-select" aria-label="اختيار القارئ"></select>
-            <label for="repeat-count-inline" class="repeat-label">تكرار</label>
-            <select id="repeat-count-inline" class="repeat-select" aria-label="عدد التكرارات">
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
+            <div class="player-selects">
+              <label for="reciter-select" class="repeat-label">القارئ</label>
+              <select id="reciter-select" class="repeat-select" aria-label="اختيار القارئ"></select>
+              <label for="repeat-count-inline" class="repeat-label">تكرار</label>
+              <select id="repeat-count-inline" class="repeat-select" aria-label="عدد التكرارات">
+                <option value="1">1</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
           </div>
         </div>
         <div id="position-info" class="position-info" aria-live="polite"></div>

@@ -22,6 +22,11 @@
   let story = null;
   let selectedPosition = null; // { surahNumber, ayaFrom, ayaTo }
 
+  // Match CSS breakpoint: mobile is < 900px
+  function isMobileLayout() {
+    return window.matchMedia('(max-width: 899px)').matches;
+  }
+
   // Cache: key -> { ayat: [{n, text, audio}], surahNumber, from, to }
   const memoryCache = new Map();
 
@@ -179,7 +184,7 @@
       positions.forEach(p => {
         const b = el('button', { class: 'position-btn', dataset: { surah: String(p.surahNumber), from: String(p.ayaFrom), to: String(p.ayaTo) } });
         b.textContent = `الموضع ${p.positionIndex}: ${p.ayaFrom} – ${p.ayaTo}`;
-        b.addEventListener('click', () => onSelectPosition(p));
+        b.addEventListener('click', () => onSelectPosition(p, { autoScroll: true }));
         list.appendChild(b);
       });
       panel.appendChild(list);
@@ -225,7 +230,8 @@
     if (node) { node.classList.add('current'); scrollIntoViewCentered(row); }
   }
 
-  async function onSelectPosition(p) {
+  async function onSelectPosition(p, opts = {}) {
+    const autoScroll = Boolean(opts.autoScroll);
     // stop existing
     AudioController.stop?.();
     selectedPosition = { surahNumber: p.surahNumber, ayaFrom: p.ayaFrom, ayaTo: p.ayaTo, positionIndex: p.positionIndex, surahNameAr: p.surahNameAr, surahNameEn: p.surahNameEn };
@@ -247,6 +253,11 @@
 
     // Update position info box
     setPositionInfo(p);
+
+    // On small screens, only auto-scroll for user-triggered selections
+    if (autoScroll && isMobileLayout()) {
+      document.querySelector('.controls')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     clearAyat();
     setPlaybackStatus('جارٍ التحضير…');
@@ -281,7 +292,7 @@
         setSettings({ audioEdition: recSel.value });
         if (selectedPosition) {
           // reload current position to refresh audio URLs
-          onSelectPosition(selectedPosition);
+          onSelectPosition(selectedPosition, { autoScroll: false });
         }
       });
       recSel.dataset.inited = '1';
@@ -323,14 +334,14 @@
       const sNum = Number(surah), a = Number(from), b = Number(to);
       const p = story.positions.find(x => x.surahNumber === sNum && x.ayaFrom === a && x.ayaTo === b) || { surahNumber: sNum, ayaFrom: a, ayaTo: b, positionIndex: 0 };
       // load ayat but do not autoplay; onSelectPosition will expand + mark active
-      onSelectPosition(p).then(() => {
+      onSelectPosition(p, { autoScroll: false }).then(() => {
         // paused by default: user can hit play
       });
     } else {
       // No deep link: auto-open first position
       const first = story.positions[0];
       if (first) {
-        onSelectPosition(first);
+        onSelectPosition(first, { autoScroll: false });
       }
     }
   }
