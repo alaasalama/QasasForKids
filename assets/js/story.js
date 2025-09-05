@@ -37,16 +37,21 @@
   // Local text cache per surah for offline-first loading
   const localTextCache = new Map(); // surah -> { edition, surah, ayahs: { [n]: text } }
 
+  async function getLocalSurahData(surah) {
+    let data = localTextCache.get(surah);
+    if (!data) {
+      const url = `assets/data/text/${surah}.json?v=${Date.now()}`;
+      data = await fetchJSON(url);
+      localTextCache.set(surah, data);
+    }
+    return data;
+  }
+
   async function fetchAyahTextLocalFirst(surah, ayah, edition) {
     // Try local JSON if edition is the default (quran-uthmani-quran-academy)
     if (edition === 'quran-uthmani-quran-academy') {
       try {
-        let data = localTextCache.get(surah);
-        if (!data) {
-          const url = `assets/data/text/${surah}.json?v=${Date.now()}`;
-          data = await fetchJSON(url);
-          localTextCache.set(surah, data);
-        }
+        const data = await getLocalSurahData(surah);
         const t = data?.ayahs?.[String(ayah)] ?? data?.ayahs?.[ayah];
         if (t) return t;
       } catch { /* fall back to remote */ }
@@ -72,17 +77,34 @@
     const key = cacheKey(surah, from, to, settings.textEdition, settings.audioEdition);
     if (memoryCache.has(key)) return memoryCache.get(key);
 
+    // Fast path: load local surah JSON once and build text list; defer audio
     const ayat = [];
-    for (let n = from; n <= to; n++) {
-      try {
-        const [text, audio] = await Promise.all([
-          fetchAyahTextLocalFirst(surah, n, settings.textEdition),
-          fetchAyahAudio(surah, n, settings.audioEdition),
-        ]);
-        ayat.push({ n, text, audio });
-      } catch (e) {
-        console.warn('Ayah fetch failed', surah, n, e);
-        ayat.push({ n, text: '(تعذر تحميل الآية)', audio: null });
+    try {
+      const data = await getLocalSurahData(surah);
+      for (let n = from; n <= to; n++) {
+        const text = data?.ayahs?.[String(n)] ?? data?.ayahs?.[n] ?? '';
+        ayat.push({ n, text, audio: null });
+      }
+      // Fill any missing ayahs by falling back to local-first per-ayah fetch (may hit API)
+      const missing = ayat.filter(a => !a.text);
+      if (missing.length) {
+        for (const a of missing) {
+          try {
+            a.text = await fetchAyahTextLocalFirst(surah, a.n, settings.textEdition);
+          } catch {
+            a.text = '(تعذر تحميل الآية)';
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Local text load failed, falling back per-ayah', e);
+      for (let n = from; n <= to; n++) {
+        try {
+          const text = await fetchAyahTextLocalFirst(surah, n, settings.textEdition);
+          ayat.push({ n, text, audio: null });
+        } catch (err) {
+          ayat.push({ n, text: '(تعذر تحميل الآية)', audio: null });
+        }
       }
     }
     const result = { surahNumber: surah, from, to, ayat };
@@ -130,16 +152,25 @@
       onUpdate = updateCb; onEnd = endCb;
     }
 
-    function playAt(i) {
+    async function playAt(i) {
       const a = ensureEl();
       if (i < 0 || i >= queue.length) return finishOrRepeat();
       index = i;
       const item = queue[index];
-      a.src = item.audio || '';
-      if (!item.audio) {
-        // skip if missing audio
-        return next();
+      // Ensure audio URL (fetch lazily if needed)
+      let url = item.audio;
+      if (!url) {
+        try {
+          const s = getSettings();
+          url = await fetchAyahAudio(item.surahNumber, item.ayahNumber, s.audioEdition);
+          item.audio = url;
+        } catch (e) {
+          console.warn('audio fetch failed', e);
+          url = null;
+        }
       }
+      if (!url) { return next(); }
+      a.src = url;
       a.play().catch(err => {
         console.warn('play failed', err);
         next();
@@ -281,7 +312,7 @@
 
   function setupQueueAndControls(ayat) {
     const s = getSettings();
-    const queue = ayat.map(a => ({ audio: a.audio, ayahNumber: a.n }));
+    const queue = ayat.map(a => ({ audio: a.audio, ayahNumber: a.n, surahNumber: selectedPosition?.surahNumber || 0 }));
 
     // Reciter dropdown in player
     const recSel = document.getElementById('reciter-select');
@@ -325,7 +356,7 @@
     document.getElementById('btn-play').onclick = () => AudioController.play();
     document.getElementById('btn-pause').onclick = () => AudioController.pause();
     document.getElementById('btn-resume').onclick = () => AudioController.resume();
-    document.getElementById('btn-stop').onclick = () => { AudioController.stop(); document.querySelectorAll('.ayah.current').forEach(e => e.classList.remove('current')); setPlaybackStatus(''); };
+    document.getElementById('btn-stop').onclick = () => { AudioController.stop(); document.querySelectorAll('.ayah-text.current').forEach(e => e.classList.remove('current')); setPlaybackStatus(''); };
   }
 
   function applyDeepLink() {
