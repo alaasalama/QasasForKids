@@ -50,6 +50,7 @@
   }
 
   async function init() {
+    window.qqkUtils.initScrollTopButton();
     try {
       const data = await loadStoriesFromCSV();
       stories = data.stories;

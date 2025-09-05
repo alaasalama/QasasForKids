@@ -65,5 +65,25 @@ function scrollIntoViewCentered(node) {
   node?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
+// Scroll-to-top button (injects once per page)
+function initScrollTopButton(opts = {}) {
+  // Lower threshold to show sooner on small screens
+  let threshold = Number(opts.threshold ?? 0);
+  if (!threshold || Number.isNaN(threshold)) {
+    threshold = Math.min(300, Math.floor(window.innerHeight * 0.6));
+  }
+  if (document.getElementById('scroll-top')) return; // already added
+  const btn = el('button', { id: 'scroll-top', class: 'scroll-top-btn', 'aria-label': 'إلى الأعلى', title: 'إلى الأعلى' }, '▲');
+  document.body.appendChild(btn);
+  const toggle = () => {
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    if (y > threshold) btn.classList.add('visible'); else btn.classList.remove('visible');
+  };
+  window.addEventListener('scroll', toggle, { passive: true });
+  window.addEventListener('load', toggle);
+  window.addEventListener('resize', toggle);
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
 // Expose in global scope for simplicity
-window.qqkUtils = { slugify, debounce, el, showToast, fetchJSON, parseHashParams, setHashParams, scrollIntoViewCentered };
+window.qqkUtils = { slugify, debounce, el, showToast, fetchJSON, parseHashParams, setHashParams, scrollIntoViewCentered, initScrollTopButton };

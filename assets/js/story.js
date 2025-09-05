@@ -378,6 +378,7 @@
   }
 
   async function init() {
+    window.qqkUtils.initScrollTopButton();
     const params = parseHashParams();
     if (!params.storyId) {
       showToast('لم يتم تحديد القصة.');
