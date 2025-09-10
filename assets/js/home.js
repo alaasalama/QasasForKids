@@ -18,7 +18,7 @@
   // Use titles exactly as provided in CSV (no prefix/sanitization)
 
   function cardForStory(s) {
-    const url = `story.html#storyId=${encodeURIComponent(s.id)}`;
+    const url = `story.html?storyId=${encodeURIComponent(s.id)}`;
     const a = el('a', { class: 'card', href: url, 'aria-label': `افتح ${s.nameAr || '—'}` }, [
       el('div', { class: 'card-title' }, s.nameAr || '—'),
       typeBadge(s.type),

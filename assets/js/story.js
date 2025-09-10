@@ -389,7 +389,21 @@
       storiesById = data.storiesById;
       story = storiesById[params.storyId];
       if (!story) throw new Error('story not found');
-      document.getElementById('story-title').textContent = story.nameAr || story.nameEn || '—';
+      const titleText = story.nameAr || story.nameEn || '—';
+      document.getElementById('story-title').textContent = titleText;
+      document.title = `${titleText} | قصص القرآن للأطفال`;
+      // Update meta description and canonical for SEO
+      const descText = `عرض الآيات المرتبطة بقصة ${titleText} مع التلاوة الصوتية.`;
+      let md = document.querySelector('meta[name="description"]');
+      if (!md) { md = document.createElement('meta'); md.setAttribute('name','description'); document.head.appendChild(md); }
+      md.setAttribute('content', descText);
+      const params2 = parseHashParams();
+      const usp = new URLSearchParams();
+      usp.set('storyId', params2.storyId);
+      if (params2.surah && params2.from && params2.to) { usp.set('surah', params2.surah); usp.set('from', params2.from); usp.set('to', params2.to); }
+      let link = document.querySelector('link[rel="canonical"]');
+      if (!link) { link = document.createElement('link'); link.setAttribute('rel','canonical'); document.head.appendChild(link); }
+      link.setAttribute('href', `/story.html?${usp.toString()}`);
       const sectionTitle = document.querySelector('.section-title');
       if (sectionTitle) {
         const count = story.positions?.length || 0;

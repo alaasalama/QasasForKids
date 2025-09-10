@@ -49,10 +49,13 @@ async function fetchJSON(url) {
 }
 
 function parseHashParams() {
-  const hash = location.hash.startsWith("#") ? location.hash.substring(1) : location.hash;
-  const params = new URLSearchParams(hash);
+  // Merge query parameters and hash parameters, with hash taking precedence
   const out = {};
-  for (const [k, v] of params.entries()) out[k] = v;
+  const search = new URLSearchParams(location.search || "");
+  for (const [k, v] of search.entries()) out[k] = v;
+  const hash = location.hash.startsWith("#") ? location.hash.substring(1) : location.hash;
+  const h = new URLSearchParams(hash || "");
+  for (const [k, v] of h.entries()) out[k] = v;
   return out;
 }
 
