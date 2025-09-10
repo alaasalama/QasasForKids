@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>اتصل بنا | قصص القرآن للأطفال</title>
+    <meta name="description" content="تواصل معنا بخصوص موقع قصص القرآن للأطفال واقتراحاتكم." />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="/contact.html" />
+    <meta name="theme-color" content="#075985" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header hero">
+      <div class="hero-inner">
+        <a href="index.html" class="site-title-link" aria-label="الصفحة الرئيسية">
+          <h1 class="site-title">قصص القرآن للأطفال</h1>
+        </a>
+        <p class="site-tagline">يسعدنا تواصلكم واقتراحاتكم</p>
+      </div>
+    </header>
+
+    <main class="container" style="max-width: 760px;">
+      <section class="positions" aria-labelledby="contact-title">
+        <h2 id="contact-title" class="section-title">اتصل بنا</h2>
+        <form id="contact-form" class="contact-form" novalidate>
+          <div class="form-row">
+            <label for="name">الاسم</label>
+            <input id="name" name="name" type="text" required placeholder="اسمك" />
+          </div>
+          <div class="form-row">
+            <label for="email">البريد الإلكتروني</label>
+            <input id="email" name="email" type="email" required placeholder="example@email.com" />
+          </div>
+          <div class="form-row">
+            <label for="subject">الموضوع</label>
+            <input id="subject" name="subject" type="text" placeholder="موضوع الرسالة" />
+          </div>
+          <div class="form-row">
+            <label for="message">الرسالة</label>
+            <textarea id="message" name="message" rows="6" required placeholder="اكتب رسالتك هنا"></textarea>
+          </div>
+          <!-- Honeypot field to reduce spam -->
+          <div class="form-row" style="display:none;">
+            <label for="website">الموقع</label>
+            <input id="website" name="website" type="text" autocomplete="off" />
+          </div>
+          <div class="form-row" style="margin-top:.5rem;">
+            <button type="submit" class="btn">إرسال</button>
+            <a href="index.html" class="btn" style="background:#6b7280;">الصفحة الرئيسية</a>
+          </div>
+          
+        </form>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <a href="about.html" class="footer-link">من نحن</a>
+        <a href="contact.html" class="footer-link">اتصل بنا</a>
+        <div class="footer-copy">حقوق النشر © <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="assets/js/utils.js"></script>
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      window.qqkUtils?.initScrollTopButton();
+
+      // Mailto-based submission (no backend). Opens user's email client.
+      const form = document.getElementById('contact-form');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const hp = form.website?.value?.trim();
+        if (hp) return; // honeypot triggered
+        const dest = form.dataset.email || '';
+        if (!dest) { window.qqkUtils.showToast('تعذر الإرسال: البريد غير مهيأ'); return; }
+
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const subject = document.getElementById('subject').value.trim() || 'رسالة من صفحة اتصل بنا';
+        const msg = document.getElementById('message').value.trim();
+        if (!name || !email || !msg) { window.qqkUtils.showToast('يرجى تعبئة الحقول المطلوبة'); return; }
+
+        const body = `الاسم: ${name}%0D%0Aالبريد: ${email}%0D%0A%0D%0A${encodeURIComponent(msg)}`;
+        const href = `mailto:${encodeURIComponent(dest)}?subject=${encodeURIComponent(subject)}&body=${body}`;
+        window.location.href = href;
+      });
+    </script>
+  </body>
+  </html>
