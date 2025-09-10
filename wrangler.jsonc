@@ -1,10 +1,10 @@
 {
-  // Cloudflare Workers config to serve this static site
+  // Cloudflare Workers config to serve this static site with GA injection
   "name": "qasasforkids",
   "compatibility_date": "2025-09-04",
+  "main": "worker.js",
   // Serve static assets from the repo root
   "assets": {
     "directory": "./"
   }
 }
-
