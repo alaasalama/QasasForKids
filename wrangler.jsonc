@@ -5,8 +5,8 @@
   "main": "worker.js",
   // Map your domain to this Worker (add both apex and www if used)
   "routes": [
-    { "pattern": "qasasforkids.com/*" },
-    { "pattern": "www.qasasforkids.com/*" }
+    { "pattern": "qasasforkids.com/*", "zone_name": "qasasforkids.com" },
+    { "pattern": "www.qasasforkids.com/*", "zone_name": "qasasforkids.com" }
   ],
   // Serve static assets from the repo root
   "assets": {
