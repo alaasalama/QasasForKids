@@ -28,6 +28,12 @@ export default {
       });
     }
 
-    return rewriter.transform(res);
+    const transformed = rewriter.transform(res);
+    // Add lightweight debug headers to help validate in Network tab (non-secret)
+    const headers = new Headers(transformed.headers);
+    headers.set('x-worker-active', '1');
+    headers.set('x-ga-configured', GA_ID ? '1' : '0');
+    headers.set('x-contact-configured', CONTACT_EMAIL ? '1' : '0');
+    return new Response(transformed.body, { status: transformed.status, statusText: transformed.statusText, headers });
   }
 };
