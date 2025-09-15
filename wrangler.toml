@@ -10,7 +10,7 @@ workers_dev = false
 enabled = true
 
 [assets]
-directory = "./"
+directory = "public"
 binding = "ASSETS"
 
 # Prod routes (owned by GitHub CI/CD)

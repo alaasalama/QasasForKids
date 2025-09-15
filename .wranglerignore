@@ -1,0 +1,40 @@
+# Exclude repo and tooling files from asset uploads
+.git/
+.github/
+.wrangler/
+.vscode/
+.idea/
+
+# Package managers and build caches
+node_modules/
+dist/
+build/
+.cache/
+
+# Project config and metadata
+wrangler.toml
+wrangler.json
+wrangler.jsonc
+package.json
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+README
+README.md
+LICENSE
+
+# Local environment and OS files
+.env
+.env.*
+.DS_Store
+.gitignore
+
+# Scripts and non-public sources
+scripts/
+*.map
+*.ts
+*.tsx
+*.scss
+*.sass
+*.less
+*.md
