@@ -3,4 +3,3 @@ worker.js
 assets/data/.~lock.database.csv#
 .wrangler
 node_modules
-wrangler.toml

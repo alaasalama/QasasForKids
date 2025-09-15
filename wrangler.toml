@@ -1,0 +1,35 @@
+# ---------- Base (Production) ----------
+name = "qasasforkids"
+main = "worker.js"
+compatibility_date = "2025-09-04"
+
+# Don’t expose workers.dev for prod; GitHub deploys to routes only
+workers_dev = false
+
+[observability.logs]
+enabled = true
+
+[assets]
+directory = "./"
+binding = "ASSETS"
+
+# Prod routes (owned by GitHub CI/CD)
+[[routes]]
+pattern = "qasasforkids.com/*"
+zone_name = "qasasforkids.com"
+
+[[routes]]
+pattern = "www.qasasforkids.com/*"
+zone_name = "qasasforkids.com"
+
+# ---------- Dev environment ----------
+[env.dev]
+# Different name => separate worker, separate workers.dev URL
+name = "qasasforkids-dev"
+
+# Expose dev on workers.dev (no routes)
+workers_dev = true
+
+# Optional: dev-only vars/flags/bindings if you need them
+# [env.dev.vars]
+# FEATURE_DEBUG = "true"
