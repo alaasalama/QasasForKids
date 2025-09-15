@@ -1,5 +1,18 @@
-worker.js
+# Ignore everything by default
+/*
+
+# Allow-list only static site sources
+!/.gitignore
+!/README.md
+!/public/
+!/public/**
+
+# Optionally allow a license file
+!/LICENSE
+
+# Never commit local env files (in case they exist)
+.env
+.env.*
+
+# macOS junk
 /.DS_Store
-assets/data/.~lock.database.csv#
-.wrangler
-node_modules
