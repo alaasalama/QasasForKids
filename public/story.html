@@ -44,10 +44,12 @@
         <div class="controls">
           <div id="playback-status" class="status" aria-live="polite"></div>
           <div class="player-controls">
-            <button id="btn-play" class="btn" aria-label="تشغيل">تشغيل</button>
-            <button id="btn-pause" class="btn" aria-label="إيقاف مؤقت">إيقاف مؤقت</button>
-            <button id="btn-resume" class="btn" aria-label="استئناف">استئناف</button>
-            <button id="btn-stop" class="btn" aria-label="إيقاف">إيقاف</button>
+            <button id="btn-play-pause" class="player-button" type="button" aria-label="تشغيل" data-state="play">
+              <span class="player-icon" aria-hidden="true" data-icon>▶</span>
+            </button>
+            <button id="btn-stop" class="player-button player-button-stop" type="button" aria-label="إيقاف">
+              <span class="player-icon" aria-hidden="true" data-icon>⏹</span>
+            </button>
             <div class="player-selects">
               <label for="reciter-select" class="repeat-label">القارئ</label>
               <select id="reciter-select" class="repeat-select" aria-label="اختيار القارئ"></select>

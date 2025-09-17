@@ -117,7 +117,9 @@
     let audioEl = null;
     let queue = [];
     let index = -1;
+    let repeatTotal = 1;
     let repeatRemaining = 1;
+    let completedCycles = 0;
     let onUpdate = () => {};
     let onEnd = () => {};
 
@@ -130,13 +132,17 @@
       return audioEl;
     }
 
-    function stop() {
+    function stop({ reset = true } = {}) {
       if (audioEl) {
         audioEl.pause();
         audioEl.currentTime = 0;
       }
       // Keep the queue so Play can start again from the beginning
       index = -1;
+      if (reset) {
+        repeatRemaining = repeatTotal;
+        completedCycles = 0;
+      }
       onUpdate(index, audioEl);
     }
 
@@ -148,7 +154,9 @@
       stop();
       queue = items.slice();
       index = -1;
-      repeatRemaining = Math.max(1, repeatCount|0);
+      repeatTotal = Math.max(1, repeatCount|0);
+      repeatRemaining = repeatTotal;
+      completedCycles = 0;
       onUpdate = updateCb; onEnd = endCb;
     }
 
@@ -179,23 +187,52 @@
     }
 
     function finishOrRepeat() {
+      if (!queue.length) return;
+      completedCycles = Math.min(repeatTotal, completedCycles + 1);
       if (repeatRemaining > 1) {
         repeatRemaining -= 1;
         index = -1;
         playAt(0);
       } else {
-        stop();
+        repeatRemaining = 0;
+        stop({ reset: false });
         onEnd();
       }
     }
 
     function next() { playAt(index + 1); }
     function prev() { playAt(index - 1); }
-    function play() { playAt(index < 0 ? 0 : index); }
+    function play() {
+      if (index < 0 && repeatRemaining <= 0) {
+        repeatRemaining = repeatTotal;
+        completedCycles = 0;
+      }
+      playAt(index < 0 ? 0 : index);
+    }
     function pause() { ensureEl().pause(); onUpdate(index, audioEl); }
     function resume() { ensureEl().play().catch(()=>{}); onUpdate(index, audioEl); }
 
-    return { setQueue, play, pause, resume, stop, next, prev };
+    function hasActiveTrack() {
+      return audioEl !== null && index >= 0;
+    }
+
+    function isPaused() {
+      return hasActiveTrack() && audioEl.paused;
+    }
+
+    function setRepeatCount(newRepeat = 1) {
+      repeatTotal = Math.max(1, newRepeat|0);
+      if (index < 0) {
+        repeatRemaining = repeatTotal;
+        completedCycles = 0;
+      } else {
+        completedCycles = Math.min(completedCycles, repeatTotal);
+        const remaining = Math.max(1, repeatTotal - completedCycles);
+        repeatRemaining = remaining;
+      }
+    }
+
+    return { setQueue, play, pause, resume, stop, next, prev, hasActiveTrack, isPaused, setRepeatCount };
   })();
 
   function renderAccordion(story) {
@@ -235,11 +272,22 @@
   function clearAyat() {
     document.getElementById('ayat').innerHTML = '';
     setPlaybackStatus('');
+    setPlayPauseButtonState(false);
+    clearHighlight();
   }
 
   function setPlaybackStatus(text) {
     const s = document.getElementById('playback-status');
     s.textContent = text || '';
+  }
+
+  function setPlayPauseButtonState(isPlaying) {
+    const btn = document.getElementById('btn-play-pause');
+    if (!btn) return;
+    const icon = btn.querySelector('[data-icon]');
+    if (icon) icon.textContent = isPlaying ? '⏸' : '▶';
+    btn.dataset.state = isPlaying ? 'pause' : 'play';
+    btn.setAttribute('aria-label', isPlaying ? 'إيقاف مؤقت' : 'تشغيل');
   }
 
   function renderAyat(list) {
@@ -254,8 +302,12 @@
     });
   }
 
-  function highlightCurrent(n) {
+  function clearHighlight() {
     document.querySelectorAll('.ayah-text.current').forEach(e => e.classList.remove('current'));
+  }
+
+  function highlightCurrent(n) {
+    clearHighlight();
     const row = document.getElementById(`ayah-${n}`);
     const node = row?.querySelector('.ayah-text');
     if (node) { node.classList.add('current'); scrollIntoViewCentered(row); }
@@ -265,6 +317,7 @@
     const autoScroll = Boolean(opts.autoScroll);
     // stop existing
     AudioController.stop?.();
+    setPlayPauseButtonState(false);
     selectedPosition = { surahNumber: p.surahNumber, ayaFrom: p.ayaFrom, ayaTo: p.ayaTo, positionIndex: p.positionIndex, surahNameAr: p.surahNameAr, surahNameEn: p.surahNameEn };
     setHashParams({ storyId: story.id, surah: p.surahNumber, from: p.ayaFrom, to: p.ayaTo });
 
@@ -333,10 +386,16 @@
 
     const repeatSelInline = document.getElementById('repeat-count-inline');
     repeatSelInline.value = String(s.repeat);
-    repeatSelInline.onchange = () => setSettings({ repeat: Number(repeatSelInline.value) || 1 });
+    repeatSelInline.onchange = () => {
+      const newRepeat = Number(repeatSelInline.value) || 1;
+      setSettings({ repeat: newRepeat });
+      AudioController.setRepeatCount(newRepeat);
+    };
     let lastIdx = -1;
     AudioController.setQueue(queue, s.repeat, (idx, audioEl) => {
       const total = queue.length;
+      const isPlaying = Boolean(audioEl) && !audioEl.paused && idx >= 0 && idx < total;
+      setPlayPauseButtonState(isPlaying);
       if (idx >= 0 && idx < total) {
         if (idx !== lastIdx) {
           const currentAyah = queue[idx].ayahNumber;
@@ -347,16 +406,46 @@
         setPlaybackStatus(`تشغيل: آية ${idx + 1}/${total} — تقدم ${progress}%`);
       } else {
         setPlaybackStatus('');
+        clearHighlight();
+        lastIdx = -1;
       }
     }, () => {
       setPlaybackStatus('انتهى التشغيل');
+      setPlayPauseButtonState(false);
+      clearHighlight();
+      lastIdx = -1;
     });
 
-    // Wire controls
-    document.getElementById('btn-play').onclick = () => AudioController.play();
-    document.getElementById('btn-pause').onclick = () => AudioController.pause();
-    document.getElementById('btn-resume').onclick = () => AudioController.resume();
-    document.getElementById('btn-stop').onclick = () => { AudioController.stop(); document.querySelectorAll('.ayah-text.current').forEach(e => e.classList.remove('current')); setPlaybackStatus(''); };
+    const playPauseBtn = document.getElementById('btn-play-pause');
+    if (playPauseBtn && !playPauseBtn.dataset.bound) {
+      playPauseBtn.addEventListener('click', () => {
+        const state = playPauseBtn.dataset.state;
+        if (state === 'pause') {
+          AudioController.pause();
+          setPlayPauseButtonState(false);
+        } else {
+          if (AudioController.hasActiveTrack() && AudioController.isPaused()) {
+            setPlayPauseButtonState(true);
+            AudioController.resume();
+          } else {
+            setPlayPauseButtonState(true);
+            AudioController.play();
+          }
+        }
+      });
+      playPauseBtn.dataset.bound = '1';
+    }
+
+    const stopBtn = document.getElementById('btn-stop');
+    if (stopBtn && !stopBtn.dataset.bound) {
+      stopBtn.addEventListener('click', () => {
+        AudioController.stop();
+        clearHighlight();
+        setPlaybackStatus('');
+        setPlayPauseButtonState(false);
+      });
+      stopBtn.dataset.bound = '1';
+    }
   }
 
   function applyDeepLink() {
