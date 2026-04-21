@@ -9,6 +9,13 @@
 
 # Optionally allow a license file
 !/LICENSE
+!/package.json
+!/package-lock.json
+!/scripts/
+!/scripts/**
+!/wrangler.toml
+!/dist/
+!/dist/**
 
 # Never commit local env files (in case they exist)
 .env
